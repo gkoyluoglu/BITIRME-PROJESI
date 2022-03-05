@@ -5,10 +5,7 @@
 // Include the Servo library
 #include <PID_v1.h>
 #include <Servo.h>
-#include <PID_v1.h>
-#include <Filters.h>
-//Button
-#define switchPin 7
+#include <SoftwareSerial.h>
 //Panel
 #define PIN_TR 1
 #define PIN_TL 2
@@ -51,7 +48,12 @@ double output2;
 double setpoint2 = 165.8;//165.8
 PID s2Controller(&input2 ,&output2,&setpoint2 , p2,i2,d2,REVERSE);
 
-long int t1;
+//Bluetooh Haberlesme
+SoftwareSerial bluetoothModulu(10, 12); 
+double x ;
+double y ;
+double degx;
+double degy;
 
 // Creat a servo object
 Servo servo1 , servo2;
@@ -81,6 +83,8 @@ void setup() {
   s1Controller.SetOutputLimits(SERVO1_START_DEGREE-40, SERVO1_START_DEGREE+40);
   s2Controller.SetMode(AUTOMATIC);
   s2Controller.SetOutputLimits(SERVO2_START_DEGREE-40, SERVO2_START_DEGREE+40);
+  //Bluetooh
+  bluetoothModulu.begin(9600); 
 }
 void readData() {
   int temp;
@@ -181,9 +185,9 @@ void readData() {
       
       input1 = getXMM(x_pos);
       input2 = getYMM(y_pos);
-      Serial.print(input1);
+      Serial.print(p.x);
       Serial.print("\t");
-      Serial.println(input2);
+      Serial.println(p.y);
       s1Controller.Compute();
       s2Controller.Compute();
       // Switch to the Turn off the panel state
@@ -203,15 +207,11 @@ void readData() {
       state = 9;
       break;
     case 9:
+      bluetoothModulu.write((int)p.x);
+      bluetoothModulu.write((int)p.y);
       temp = millis() - panel_time;
 
-      // Has it been long enough?
-      if (temp >= SETTLE_TIME)
-      { // If it has...
-
-        // Switch to the Read Y state
-        state = 0;
-      }
+      state=0;
       break;
     default: // Error
       Serial.println("Something has gone terribly wrong.");
